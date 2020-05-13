@@ -123,8 +123,6 @@ public class EsClient implements Closeable {
         Gson gson = new Gson();
         EsClient client = new EsClient("prophet2.dg.163.org", 8200);
 
-        client.deleteIndex("es-client-test-123");
-
         client.close();
     }
 }
