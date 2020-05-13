@@ -1,14 +1,14 @@
-package com.wuxi.common.beans;
+package com.wuxi.beans;
 
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class person {
+public class Person {
     private long id;
 
     private String name;
 
-    private List<person> children;
+    private List<Person> children;
 }
