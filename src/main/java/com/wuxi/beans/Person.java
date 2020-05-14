@@ -10,5 +10,7 @@ public class Person {
 
     private String name;
 
+    private String code;
+
     private List<Person> children;
 }

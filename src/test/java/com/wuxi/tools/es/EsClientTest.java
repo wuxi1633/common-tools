@@ -12,6 +12,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -29,25 +30,78 @@ public class EsClientTest {
         client.close();
     }
 
+    /**
+     * curl PUT IP:PORT/INDEX
+     * {
+     *   "mappings":{
+     *     "position": {
+     *       "properties": {
+     *         "name": {
+     *           "type": "keyword"
+     *         },
+     *         "code": {
+     *           "type": "keyword"
+     *         },
+     *         "id": {
+     *           "type": "long"
+     *         }
+     *       }
+     *     }
+     *   }
+     * }
+     */
+    @Test
+    @Deprecated
+    public void createIndex(){
+        String mapStr = "{\n" +
+                "    \"position\": {\n" +
+                "      \"properties\": {\n" +
+                "        \"app\": {\n" +
+                "          \"type\": \"keyword\"\n" +
+                "        },\n" +
+                "        \"code\": {\n" +
+                "          \"type\": \"keyword\"\n" +
+                "        },\n" +
+                "        \"createTime\": {\n" +
+                "          \"type\": \"long\"\n" +
+                "        },\n" +
+                "        \"endQuestion\": {\n" +
+                "          \"type\": \"keyword\"\n" +
+                "        },\n" +
+                "        \"event\": {\n" +
+                "          \"type\": \"long\"\n" +
+                "        },\n" +
+                "        \"ext\": {\n" +
+                "          \"type\": \"keyword\"\n" +
+                "        },\n" +
+                "        \"id\": {\n" +
+                "          \"type\": \"keyword\"\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }";
+        Map<String, Object> mapping = gson.fromJson(mapStr, Map.class);
+        client.createIndex("es-client-test-123", "position", mapping);
+    }
+
     @Test
     public void index() {
-        List<Object> list = new ArrayList<>();
-        Person person =  new Person();
-        person.setId(1001L);
-        person.setName("张三");
-        list.add(person);
 
-        Person person2 =  new Person();
-        person2.setId(1002L);
-        person2.setName("李四");
-        list.add(person2);
+        // mock 100万数据
+        for (int i = 10; i < 20; i++) {
+            List<Object> list = new ArrayList<>();
+            for (int j = 10000; j < 20000; j++) {
 
-        Person person3 =  new Person();
-        person3.setId(1003L);
-        person3.setName("王麻子");
-        list.add(person3);
+                Person person =  new Person();
+                person.setId(i * j);
+                person.setName("张三" + person.getId());
+                person.setCode(String.valueOf(System.currentTimeMillis()));
+                list.add(person);
 
-        client.index(list, "es-client-test-123", "position");
+            }
+            client.index(list, "es-client-test-123", "position");
+        }
+
     }
 
     @Test

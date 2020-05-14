@@ -3,6 +3,7 @@ package com.wuxi.tools.es;
 import com.google.gson.Gson;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.HttpHost;
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -14,9 +15,12 @@ import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 
@@ -33,7 +37,7 @@ public class EsClient implements Closeable {
 
     private Gson gson = new Gson();
 
-    private RequestOptions options = RequestOptions.DEFAULT.toBuilder().build();
+    private RequestOptions DEFAULT_OPTIONS = RequestOptions.DEFAULT.toBuilder().build();
 
     @Override
     public void close(){
@@ -50,6 +54,21 @@ public class EsClient implements Closeable {
                         new HttpHost(ip, port, "http")));
     }
 
+    public void createIndex(String index, String type, Map<String, Object> mapping){
+        Settings settings = Settings.builder()
+                .put("index.number_of_shards", 5)
+                .put("index.number_of_replicas", 0)
+                .build();
+        CreateIndexRequest request = new CreateIndexRequest(index);
+        request.settings(settings);
+        request.mapping(type, mapping);
+        try {
+            client.indices().create(request, DEFAULT_OPTIONS);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void index(List<Object> data, String index, String type){
         if(ObjectUtils.isEmpty(data)){
             System.out.println("empty data!!!");
@@ -60,7 +79,7 @@ public class EsClient implements Closeable {
             IndexRequest request = new IndexRequest().index(index).type(type).source(gson.toJson(e), XContentType.JSON);
             bulkRequest.add(request);
         });
-        bulk(bulkRequest);
+        bulk(bulkRequest, data.size());
     }
 
     public void deleteIndex(String index){
@@ -83,14 +102,16 @@ public class EsClient implements Closeable {
             DeleteRequest request = new DeleteRequest().index(index).type(type).id(e);
             bulkRequest.add(request);
         });
-        bulk(bulkRequest);
+        bulk(bulkRequest, ids.size());
     }
 
-    private void bulk(BulkRequest bulkRequest) {
+    private void bulk(BulkRequest bulkRequest, int size) {
         try {
-            BulkResponse responses = client.bulk(bulkRequest, options);
+            BulkResponse responses = client.bulk(bulkRequest, DEFAULT_OPTIONS);
             if(responses.hasFailures()){
                 System.out.println("warn! some request may be failure!");
+            } else {
+                System.out.println("bulk success! size: " + size);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -106,7 +127,7 @@ public class EsClient implements Closeable {
         request.source(sourceBuilder);
         try {
             List<Map<String, Object>> result = new LinkedList<>();
-            SearchResponse rp = client.search(request, options);
+            SearchResponse rp = client.search(request, DEFAULT_OPTIONS);
             if(rp.getHits().getHits().length > 0){
                 for (SearchHit hit : rp.getHits().getHits()) {
                     result.add(hit.getSourceAsMap());
