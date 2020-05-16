@@ -1,3 +1,3 @@
 工具列表：
-- com.wuxi.tools.common.SortUtils  数字、字母、中文排序工具
-- com.wuxi.tools.es.EsClient elasticsearch的客户端工具
+- com.wuxi.tools.common.SortUtils:  a tool to sort a string list contains digit, alphabet or chinese
+- com.wuxi.tools.es.EsClient: a elasticsearch client that can do crud operations whit es
