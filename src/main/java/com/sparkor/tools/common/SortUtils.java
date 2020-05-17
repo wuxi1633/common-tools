@@ -1,7 +1,6 @@
-package com.wuxi.tools.common;
+package com.sparkor.tools.common;
 
 import com.google.gson.*;
-import com.wuxi.beans.Person;
 import net.sourceforge.pinyin4j.PinyinHelper;
 import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType;
 import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;

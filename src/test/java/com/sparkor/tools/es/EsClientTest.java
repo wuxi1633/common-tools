@@ -1,7 +1,7 @@
-package com.wuxi.tools.es;
+package com.sparkor.tools.es;
 
 import com.google.gson.Gson;
-import com.wuxi.beans.Person;
+import com.sparkor.beans.Person;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -13,8 +13,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.Assert.*;
 
 public class EsClientTest {
 

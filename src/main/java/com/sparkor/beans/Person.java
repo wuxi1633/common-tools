@@ -1,4 +1,4 @@
-package com.wuxi.beans;
+package com.sparkor.beans;
 
 import lombok.Data;
 

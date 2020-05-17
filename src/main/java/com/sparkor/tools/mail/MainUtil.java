@@ -1,4 +1,4 @@
-package com.wuxi.tools.mail;
+package com.sparkor.tools.mail;
 
 
 import org.apache.commons.lang3.StringUtils;

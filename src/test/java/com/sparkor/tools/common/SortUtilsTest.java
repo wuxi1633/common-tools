@@ -1,14 +1,12 @@
-package com.wuxi.tools.common;
+package com.sparkor.tools.common;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
-import com.wuxi.beans.Person;
+import com.sparkor.beans.Person;
 import org.junit.Test;
 
 import java.util.LinkedList;
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 public class SortUtilsTest {
     private Gson gson = new Gson();
