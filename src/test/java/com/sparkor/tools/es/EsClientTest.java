@@ -17,7 +17,7 @@ public class EsClientTest {
     private Gson gson = new Gson();
     @Before
     public void init(){
-        client = new EsClient("dingwei-elk-01.dg.16311234.org", 16311234);
+        client = new EsClient("hostdemo", 16311234);
     }
 
     @After
