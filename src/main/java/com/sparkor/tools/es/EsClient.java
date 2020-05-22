@@ -1,7 +1,9 @@
 package com.sparkor.tools.es;
 
 import com.google.gson.Gson;
+import com.sparkor.tools.excel.ExcelClient;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -116,10 +118,17 @@ public class EsClient implements Closeable {
         }
     }
 
-    public List<Map<String, Object>> query(String index, BoolQueryBuilder boolQueryBuilder, int size, String name, SortOrder order){
+    public List<Map<String, Object>> query(String index, BoolQueryBuilder boolQueryBuilder, Integer size, String sortBy, SortOrder order){
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-        sourceBuilder.size(size);
-        sourceBuilder.sort(name, order);
+
+        if(null != size && size > 0){
+            sourceBuilder.size(size);
+        }
+
+        if(StringUtils.isNotBlank(sortBy) && null != order){
+            sourceBuilder.sort(sortBy, order);
+        }
+
         sourceBuilder.query(boolQueryBuilder);
         SearchRequest request = new SearchRequest(index);
         request.source(sourceBuilder);
@@ -136,6 +145,19 @@ public class EsClient implements Closeable {
             e.printStackTrace();
         }
         return new ArrayList<>();
+    }
+
+    public void queryToExcel(String index,
+                             BoolQueryBuilder boolQueryBuilder,
+                             int size, String sortBy,
+                             SortOrder order,
+                             String targetDir,
+                             String timeField,
+                             Map<String, String> rowTitle){
+
+        List<Map<String, Object>> list = query(index, boolQueryBuilder, size, sortBy, order);
+
+        new ExcelClient().trans(list, targetDir, timeField, rowTitle);
     }
 
     public static void main(String[] args){

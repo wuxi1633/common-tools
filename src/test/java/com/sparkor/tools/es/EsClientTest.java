@@ -120,4 +120,11 @@ public class EsClientTest {
         boolQueryBuilder.must(QueryBuilders.termQuery("age", 13));
         client.query("es-client-test-123", boolQueryBuilder, 3, "name", SortOrder.DESC);
     }
+
+    @Test
+    public void queryToExcel() {
+        BoolQueryBuilder boolQueryBuilder =  QueryBuilders.boolQuery();
+        boolQueryBuilder.must(QueryBuilders.termQuery("age", 13));
+        client.query("es-client-test-123", boolQueryBuilder, 3, "name", SortOrder.DESC);
+    }
 }
