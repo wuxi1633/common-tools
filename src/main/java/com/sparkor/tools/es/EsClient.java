@@ -2,6 +2,7 @@ package com.sparkor.tools.es;
 
 import com.google.gson.Gson;
 import com.sparkor.tools.excel.ExcelClient;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
@@ -11,26 +12,28 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.*;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+/**
+ * "es_version": "5.6.2",
+ * "lucene_version": "6.6.1"
+ */
 public class EsClient implements Closeable {
 
     private RestHighLevelClient client;
@@ -147,23 +150,42 @@ public class EsClient implements Closeable {
         return new ArrayList<>();
     }
 
-    public void queryToExcel(String index,
-                             BoolQueryBuilder boolQueryBuilder,
-                             int size, String sortBy,
-                             SortOrder order,
-                             String targetDir,
-                             String timeField,
-                             Map<String, String> rowTitle){
+    public void queryToExcel(String index, BoolQueryBuilder boolQueryBuilder, String targetDir, String timeField){
+        ExcelClient excelClient = new ExcelClient();
+        final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
+        SearchRequest searchRequest = new SearchRequest(index); // 新建索引搜索请求
+        searchRequest.scroll(scroll);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(boolQueryBuilder);
+        searchSourceBuilder.size(10000);
+        searchRequest.source(searchSourceBuilder);
+        List<Map<String, Object>> list = new LinkedList<>();
+        SearchResponse searchResponse;
+        try {
+            searchResponse = client.search(searchRequest, DEFAULT_OPTIONS);
 
-        List<Map<String, Object>> list = query(index, boolQueryBuilder, size, sortBy, order);
+            while (searchResponse.getHits().getHits().length > 0){
+                for (SearchHit searchHit : searchResponse.getHits().getHits()) {
+                    list.add(searchHit.getSourceAsMap());
+                }
 
-        new ExcelClient().trans(list, targetDir, timeField, rowTitle);
-    }
+                if(CollectionUtils.isNotEmpty(list) && (list.size() >= ExcelClient.EXCEL_SIZE || searchResponse.getHits().getHits() == null || searchResponse.getHits().getHits().length <= 0)){
+                    excelClient.trans(index, list, targetDir, timeField, new HashMap<>());
+                    list.clear();
+                }
 
-    public static void main(String[] args){
-        Gson gson = new Gson();
-        EsClient client = new EsClient("prophet2.dg.163.org", 8200);
+                SearchScrollRequest scrollRequest = new SearchScrollRequest(searchResponse.getScrollId());
+                scrollRequest.scroll(scroll);
+                searchResponse = client.scroll(scrollRequest, RequestOptions.DEFAULT);
 
-        client.close();
+                if(CollectionUtils.isNotEmpty(list) && (list.size() > ExcelClient.EXCEL_SIZE || searchResponse.getHits().getHits() == null || searchResponse.getHits().getHits().length <= 0)){
+                    excelClient.trans(index ,list, targetDir, timeField, new HashMap<>());
+                    list.clear();
+                }
+            }
+            System.out.println("search es finish!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

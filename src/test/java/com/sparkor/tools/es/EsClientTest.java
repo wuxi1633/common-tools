@@ -9,10 +9,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class EsClientTest {
 
@@ -20,7 +17,7 @@ public class EsClientTest {
     private Gson gson = new Gson();
     @Before
     public void init(){
-        client = new EsClient("prophet45.dg.163.org", 84500);
+        client = new EsClient("dingwei-elk-01.dg.16311234.org", 16311234);
     }
 
     @After
@@ -124,7 +121,6 @@ public class EsClientTest {
     @Test
     public void queryToExcel() {
         BoolQueryBuilder boolQueryBuilder =  QueryBuilders.boolQuery();
-        boolQueryBuilder.must(QueryBuilders.termQuery("age", 13));
-        client.query("es-client-test-123", boolQueryBuilder, 3, "name", SortOrder.DESC);
+        client.queryToExcel("userpathde", boolQueryBuilder, "/Users/liwuxi/Desktop/target/data", "");
     }
 }

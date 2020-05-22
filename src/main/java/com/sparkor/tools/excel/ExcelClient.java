@@ -22,14 +22,22 @@ public class ExcelClient {
 
     private static int targetPart = -1;
 
+    public static int EXCEL_SIZE = 50000;
+
     /**
      * Source file content must be json list with out "[" or "]", and each line must be a json object that not end with "," !
      * @param timeField the key name of timeField
      * @param rowTitle the key is the fileName or jsonObject, the value is the target row title in excel
      */
-    public void trans(List<Map<String, Object>> jsonList, String targetDirPath, String timeField, Map<String, String> rowTitle){
+    public void trans(String index, List<Map<String, Object>> jsonList, String targetDirPath, String timeField, Map<String, String> rowTitle){
         targetPart++;
-        String targetPath = targetDirPath + File.separator + "data-0" + targetPart + ".xlsx";
+        File file = new File(targetDirPath);
+        if(!file.exists()){
+            file.mkdirs();
+        }
+        String targetPath = targetDirPath + (targetDirPath.endsWith(File.separator) ? "":File.separator) + index + "-0" + targetPart + ".xlsx";
+        System.out.println("start gen file: " + targetPath);
+        System.out.println("please wait!");
         writeData(jsonList, targetPath, timeField, rowTitle);
     }
 
@@ -43,6 +51,7 @@ public class ExcelClient {
         List<JsonObject> jsonObjectList = jsonList.stream().map(e -> parser.parse(gson.toJson(e)).getAsJsonObject()).collect(Collectors.toList());
         writeExcel(jsonObjectList, targetPath, timeField, rowTitle);
         System.out.println("success write file: " + targetPath + "! count: " + jsonList.size());
+        System.out.println();
     }
 
     private static XSSFWorkbook genBook(List<JsonObject> datas, List<String> keyList, String timeField, Map<String, String> rowTitle){
@@ -131,6 +140,7 @@ public class ExcelClient {
      */
     private static void writeExcel(List<JsonObject> datas, String targetPath, String timeField, Map<String, String> rowTitle) {
         List<String> keyList = genKeyList(datas);
+
         XSSFWorkbook excel = genBook(datas, keyList, timeField, rowTitle);
 
         try(FileOutputStream out = new FileOutputStream(targetPath)){
@@ -162,7 +172,6 @@ public class ExcelClient {
                     map.keySet().forEach(subKey -> {
                         subKeySet.add(key + SEPARATOR + subKey);
                     });
-                    System.out.println("find jsonObject: " + key);
                     iterator1.remove();
                 }
             }
@@ -170,10 +179,6 @@ public class ExcelClient {
         keys.addAll(subKeySet);
 
         keys.removeIf(Objects::isNull);
-
-        keys.forEach(key -> {
-            System.out.println("find key: " + key);
-        });
 
         return new ArrayList<>(keys);
     }
