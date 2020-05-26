@@ -1,21 +1,43 @@
 package com.sparkor.tools.http;
 
+import okhttp3.Response;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import java.io.IOException;
 
 public class HttpClientTest {
 
     private HttpClient httpClient = new HttpClient();
 
-    private static final String url = "";
+    private static final String url = "http://localhost:10001/position-qc/query?surveyId=9880&batch=op.asdlkjgsdgsgsgdgd&code=coadf";
 
     @Test
     public void getForMap() {
+        try {
+            Response response = httpClient.getResponse(url);
+            System.out.println(response.body().string());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
     public void getResponse() {
+        try {
+            int count = 0;
+            for (int i = 0; i < 10000000; i++) {
+                Response response = httpClient.getResponse(url);
+                count++;
+                if(count % 1000 == 0){
+                    System.out.println(response.body().string());
+                    System.out.println(count);
+                    Thread.sleep(2000L);
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test

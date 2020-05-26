@@ -125,7 +125,7 @@ public class HttpClient {
     }
 
     public Response getResponse(String url) throws IOException {
-        return getResponse(url, false);
+        return getResponse(url, true);
     }
 
     public Response getResponse(String url, Map<String, String> params) throws IOException {
