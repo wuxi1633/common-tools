@@ -21,8 +21,12 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 
@@ -148,6 +152,20 @@ public class EsClient implements Closeable {
             e.printStackTrace();
         }
         return new ArrayList<>();
+    }
+
+    public SearchResponse aggs(String index, BoolQueryBuilder boolQueryBuilder, AggregationBuilder aggBuilder){
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(boolQueryBuilder);
+        sourceBuilder.aggregation(aggBuilder);
+        SearchRequest request = new SearchRequest(index);
+        request.source(sourceBuilder);
+        try {
+            return client.search(request, DEFAULT_OPTIONS);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public void queryToExcel(String index, BoolQueryBuilder boolQueryBuilder, String targetDir, String timeField){

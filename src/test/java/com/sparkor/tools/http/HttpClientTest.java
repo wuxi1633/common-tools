@@ -9,7 +9,7 @@ public class HttpClientTest {
 
     private HttpClient httpClient = new HttpClient();
 
-    private static final String url = "http://localhost:10001/position-qc/query?surveyId=9880&batch=op.asdlkjgsdgsgsgdgd&code=coadf";
+    private static final String url = "http://10.172.23.40:10008/position-openapi/query?surveyId=9880&batch=op.openapicsl&code=coadf";
 
     @Test
     public void getForMap() {

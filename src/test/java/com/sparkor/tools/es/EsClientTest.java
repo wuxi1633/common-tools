@@ -2,13 +2,23 @@ package com.sparkor.tools.es;
 
 import com.google.gson.Gson;
 import com.sparkor.beans.Person;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.ml.job.results.Bucket;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
+import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
+import org.elasticsearch.search.aggregations.bucket.histogram.ParsedDateHistogram;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class EsClientTest {
@@ -17,7 +27,7 @@ public class EsClientTest {
     private Gson gson = new Gson();
     @Before
     public void init(){
-        client = new EsClient("hostdemo", 16311234);
+        client = new EsClient("demo", 7000);
     }
 
     @After
@@ -112,10 +122,53 @@ public class EsClientTest {
     }
 
     @Test
+    public void testAggs(){
+        String index = "position_survey_user_event";
+        BoolQueryBuilder boolQueryBuilder =  QueryBuilders.boolQuery();
+        boolQueryBuilder.must(QueryBuilders.termQuery("event", 1));
+//        boolQueryBuilder.must(QueryBuilders.rangeQuery("createTime").gte(1580894040000L).lte(1580894160000L));
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+        AggregationBuilder aggBuilder =  AggregationBuilders.dateHistogram("time").field("createTime").dateHistogramInterval(DateHistogramInterval.MINUTE);
+
+        SearchResponse response = client.aggs(index, boolQueryBuilder, aggBuilder);
+
+        ParsedDateHistogram times = response.getAggregations().get("time");
+
+        times.getBuckets().sort((Comparator<Histogram.Bucket>) (o1, o2) -> {
+            if(o1.getDocCount() > o2.getDocCount()){
+                return 1;
+            } else if(o1.getDocCount() < o2.getDocCount()){
+                return -1;
+            }
+            return 0;
+        });
+
+        times.getBuckets().forEach(e -> {
+            System.out.println(e.getKeyAsString() + "\ttime: " + sdf.format(Long.valueOf(e.getKeyAsString())) + "\tcount: " + e.getDocCount());
+        });
+
+        System.out.println(times.getBuckets().size());
+
+        int[] countHours = new int[25];
+        times.getBuckets().forEach(e -> {
+            countHours[new Date(Long.valueOf(e.getKeyAsString())).getHours()] += e.getDocCount();
+        });
+
+        for (int i = 0; i < countHours.length; i++) {
+            System.out.println("hour: " + i + ", count: " + countHours[i]);
+        }
+    }
+
+    @Test
     public void query() {
         BoolQueryBuilder boolQueryBuilder =  QueryBuilders.boolQuery();
-        boolQueryBuilder.must(QueryBuilders.termQuery("age", 13));
-        client.query("es-client-test-123", boolQueryBuilder, 3, "name", SortOrder.DESC);
+        boolQueryBuilder.must(QueryBuilders.termQuery("event", 1));
+        List<Map<String, Object>> maps = client.query("position_survey_user_event", boolQueryBuilder, 3, "createTime", SortOrder.DESC);
+        if(null != maps){
+            maps.forEach(e -> System.out.println(gson.toJson(e)));
+        }
     }
 
     @Test
