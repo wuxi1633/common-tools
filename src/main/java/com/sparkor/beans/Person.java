@@ -1,5 +1,6 @@
 package com.sparkor.beans;
 
+
 import lombok.Data;
 
 import java.util.List;

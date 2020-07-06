@@ -182,4 +182,75 @@ public class ExcelClient {
 
         return new ArrayList<>(keys);
     }
+
+
+    public List<JsonObject> readSheet(String path, int indexOfSheet, int length){
+        XSSFWorkbook excel = null;
+        FileInputStream fileInputStream = null;
+        try {
+            fileInputStream = new FileInputStream(path);
+            excel = new XSSFWorkbook(fileInputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(null != fileInputStream){
+                try {
+                    fileInputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+        }
+        return getExcelData(excel, indexOfSheet, length);
+    }
+
+    public List<JsonObject> getExcelData(XSSFWorkbook excel, int indexOfSheet, int length){
+        List<JsonObject> result = new LinkedList<>();
+        if(null == excel){
+            System.out.println("excel is null!");
+            return result;
+        }
+
+        XSSFSheet sheet = excel.getSheetAt(indexOfSheet);
+
+        if(null == sheet){
+            System.out.println("sheet is null at index: " + indexOfSheet + "!");
+            return result;
+        }
+
+        List<String> headers = new LinkedList<>();
+        int startRowNum = sheet.getFirstRowNum();
+        XSSFRow header = sheet.getRow(startRowNum);
+        for (int i = 0; i < length; i++) {
+            XSSFCell cell = header.getCell(i);
+            if(cell != null){
+                headers.add(cell.getStringCellValue());
+            }
+        }
+
+        int index = startRowNum + 1;
+        while (true){
+            JsonObject object = new JsonObject();
+            XSSFRow row = sheet.getRow(index);
+            boolean allEmtpy = true;
+            for (int i = 0; i < length; i++) {
+                XSSFCell cell = row.getCell(i);
+                if(cell != null){
+                    String value =  cell.getStringCellValue();
+                    if(StringUtils.isNotBlank(value)){
+                        allEmtpy = false;
+                        object.addProperty(headers.get(i), value);
+                    }
+                }
+            }
+            index++;
+            result.add(object);
+            if(allEmtpy){
+                break;
+            }
+        }
+
+        return result;
+    }
 }
