@@ -1,7 +1,10 @@
 package com.sparkor.tools.es;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sparkor.tools.excel.ExcelClient;
+import com.sun.org.apache.regexp.internal.RE;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -11,6 +14,9 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.get.MultiGetItemResponse;
+import org.elasticsearch.action.get.MultiGetRequest;
+import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.*;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
@@ -43,6 +49,8 @@ public class EsClient implements Closeable {
     private RestHighLevelClient client;
 
     private Gson gson = new Gson();
+
+    private JsonParser parser = new JsonParser();
 
     private RequestOptions DEFAULT_OPTIONS = RequestOptions.DEFAULT.toBuilder().build();
 
@@ -112,6 +120,15 @@ public class EsClient implements Closeable {
         bulk(bulkRequest, ids.size());
     }
 
+//    public void deleteByQuery(String index, String type, BoolQueryBuilder boolQueryBuilder){
+//        BulkRequest bulkRequest = new BulkRequest();
+//        ids.forEach(e -> {
+//            DeleteRequest request = new DeleteRequest().index(index).type(type).id(e);
+//            bulkRequest.add(request);
+//        });
+//        bulk(bulkRequest, ids.size());
+//    }
+
     private void bulk(BulkRequest bulkRequest, int size) {
         try {
             BulkResponse responses = client.bulk(bulkRequest, DEFAULT_OPTIONS);
@@ -166,6 +183,39 @@ public class EsClient implements Closeable {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public List<JsonObject> queryInIds(String index, String type, Set<String> ids){
+        List<JsonObject> result = new LinkedList<>();
+        if(null == ids || ids.size() == 0){
+            return result;
+        }
+        MultiGetRequest request = new MultiGetRequest();
+        ids.forEach(e -> {
+            request.add(new MultiGetRequest.Item(index, type, e));
+        });
+        MultiGetResponse searchResponse;
+        try {
+            searchResponse = client.mget(request, DEFAULT_OPTIONS);
+            for (MultiGetItemResponse response : searchResponse.getResponses()) {
+                Map<String, Object> data = response.getResponse().getSourceAsMap();
+                if(null != data){
+                    try {
+                        JsonObject object = new JsonObject();
+                        object.addProperty("_id", response.getId());
+                        data.forEach((key, value) -> {
+                            object.addProperty(key, value.toString());
+                        });
+                        result.add(object);
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 
     public void queryToExcel(String index, BoolQueryBuilder boolQueryBuilder, String targetDir, String timeField){

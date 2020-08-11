@@ -138,7 +138,7 @@ public class ExcelClient {
      * @param datas json data list
      * @param targetPath target excel file path
      */
-    private static void writeExcel(List<JsonObject> datas, String targetPath, String timeField, Map<String, String> rowTitle) {
+    public static void writeExcel(List<JsonObject> datas, String targetPath, String timeField, Map<String, String> rowTitle) {
         List<String> keyList = genKeyList(datas);
 
         XSSFWorkbook excel = genBook(datas, keyList, timeField, rowTitle);
@@ -222,6 +222,7 @@ public class ExcelClient {
         List<String> headers = new LinkedList<>();
         int startRowNum = sheet.getFirstRowNum();
         XSSFRow header = sheet.getRow(startRowNum);
+
         for (int i = 0; i < length; i++) {
             XSSFCell cell = header.getCell(i);
             if(cell != null){
@@ -233,14 +234,25 @@ public class ExcelClient {
         while (true){
             JsonObject object = new JsonObject();
             XSSFRow row = sheet.getRow(index);
+            if(row == null){
+                break;
+            }
             boolean allEmtpy = true;
             for (int i = 0; i < length; i++) {
                 XSSFCell cell = row.getCell(i);
                 if(cell != null){
-                    String value =  cell.getStringCellValue();
-                    if(StringUtils.isNotBlank(value)){
-                        allEmtpy = false;
-                        object.addProperty(headers.get(i), value);
+                    try {
+                        String value =  cell.getStringCellValue();
+                        if(StringUtils.isNotBlank(value)){
+                            allEmtpy = false;
+                            object.addProperty(headers.get(i), value);
+                        }
+                    }catch (Exception e){
+                        String value =  String.valueOf(new Double(cell.getNumericCellValue()).longValue());
+                        if(StringUtils.isNotBlank(value)){
+                            allEmtpy = false;
+                            object.addProperty(headers.get(i), value);
+                        }
                     }
                 }
             }

@@ -1,7 +1,10 @@
 package com.sparkor.tools.es;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.sparkor.beans.Person;
+import com.sparkor.tools.excel.ExcelClient;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.ml.job.results.Bucket;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -22,12 +25,16 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class EsClientTest {
-
+    private ExcelClient excelClient = new ExcelClient();
     private EsClient client;
     private Gson gson = new Gson();
     @Before
     public void init(){
-        client = new EsClient("demo", 7000);
+
+        // online
+        client = new EsClient("310.32200.11228.221", 70200);
+        // test
+//        client = new EsClient("1041.200.3164.2109", 18200);
     }
 
     @After
@@ -93,18 +100,27 @@ public class EsClientTest {
     public void index() {
 
         // mock 100万数据
-        for (int i = 10; i < 20; i++) {
+        long phoneStart = 10000000000L;
+        long timeStart = System.currentTimeMillis() - 365L * 24 * 3600 * 1000;
+        for (int i = 10; i < 13; i++) {
             List<Object> list = new ArrayList<>();
             for (int j = 10000; j < 20000; j++) {
-
-                Person person =  new Person();
-                person.setId(i * j);
-                person.setName("张三" + person.getId());
-                person.setCode(String.valueOf(System.currentTimeMillis()));
-                list.add(person);
+                JsonObject jsonObject =  new JsonObject();
+                jsonObject.addProperty("rewardName", "三网话费");
+                jsonObject.addProperty("rewardId", "100018");
+                jsonObject.addProperty("phone", phoneStart++);
+                jsonObject.addProperty("time", timeStart);
+                timeStart += 1000;
+                jsonObject.addProperty("type", 1);
+                jsonObject.addProperty("quantity", 1);
+                jsonObject.addProperty("price", 1);
+                jsonObject.addProperty("id", "jifen" + i*j);
+                jsonObject.addProperty("name", "李武曦" + i*j);
+                jsonObject.addProperty("idNumber", timeStart);
+                list.add(jsonObject);
 
             }
-            client.index(list, "es-client-test-123", "position");
+            client.index(list, "position_reward_history", "position");
         }
 
     }
@@ -174,6 +190,23 @@ public class EsClientTest {
     @Test
     public void queryToExcel() {
         BoolQueryBuilder boolQueryBuilder =  QueryBuilders.boolQuery();
-        client.queryToExcel("userpathde", boolQueryBuilder, "/Users/liwuxi/Desktop/target/data", "");
+        boolQueryBuilder.must(QueryBuilders.termQuery("id",22113));
+        boolQueryBuilder.must(QueryBuilders.termQuery("channel","33010"));
+//        boolQueryBuilder.must(QueryBuilders.termQuery("event",2));
+        client.queryToExcel("position_survey_user_event", boolQueryBuilder, "C:\\Users\\liwuxi\\Desktop\\target\\data", "createTime");
+    }
+
+    @Test
+    public void queryWithIds() {
+        Set<String> ids = new HashSet<>();
+        List<JsonObject> sheetData = excelClient.readSheet("C:\\Users\\liwuxi\\Desktop\\酒店项目-携程部分-0207完整版.xlsx", 0, 3);
+        sheetData.forEach(e -> {
+            JsonElement element = e.get("来源详情");
+            if(null != element){
+                ids.add(element.getAsString().trim());
+            }
+        });
+        List<JsonObject> jsonObjectList = client.queryInIds("ques_backflow_params_data", "data_params", ids);
+        excelClient.writeExcel(jsonObjectList, "C:\\Users\\liwuxi\\Desktop\\meituano2.xlsx", "", new HashMap<>());
     }
 }
